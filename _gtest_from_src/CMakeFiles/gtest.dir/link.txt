@@ -1,0 +1,2 @@
+/usr/bin/ar cr ../gmapping_glass/lib/libgtest.a  CMakeFiles/gtest.dir/src/gtest-all.cc.o
+/usr/bin/ranlib ../gmapping_glass/lib/libgtest.a

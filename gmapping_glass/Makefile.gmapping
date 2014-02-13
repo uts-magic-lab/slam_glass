@@ -1,0 +1,44 @@
+all: installed
+
+# We build from a tarball of an svn export of gmapping at revision 39.  To
+# get the original code (e.g., to make a new patch):
+#  svn co -r 39 https://openslam.informatik.uni-freiburg.de/data/svn/gmapping/trunk gmapping-svn
+SOURCE_DIR = gmapping_export
+
+installed: all
+	cd $(SOURCE_DIR) && make
+	# Poor-man's install step
+	mkdir -p lib
+	#cd ..
+	cp $(SOURCE_DIR)/lib/* lib
+	mkdir -p include/gmapping/sensor/sensor_range
+	mkdir -p include/gmapping/sensor/sensor_odometry
+	mkdir -p include/gmapping/sensor/sensor_base
+	mkdir -p include/gmapping/gridfastslam
+	mkdir -p include/gmapping/utils
+	mkdir -p include/gmapping/particlefilter
+	mkdir -p include/gmapping/scanmatcher
+	mkdir -p include/gmapping/log
+	mkdir -p include/gmapping/grid
+	cp $(SOURCE_DIR)/sensor/sensor_range/*.h include/gmapping/sensor/sensor_range
+	cp $(SOURCE_DIR)/sensor/sensor_odometry/*.h include/gmapping/sensor/sensor_odometry
+	cp $(SOURCE_DIR)/sensor/sensor_base/*.h include/gmapping/sensor/sensor_base
+	cp $(SOURCE_DIR)/gridfastslam/*.h $(SOURCE_DIR)/gridfastslam/*.hxx include/gmapping/gridfastslam
+	cp $(SOURCE_DIR)/utils/*.h include/gmapping/utils
+	cp $(SOURCE_DIR)/particlefilter/*.h include/gmapping/particlefilter
+	cp $(SOURCE_DIR)/scanmatcher/*.h include/gmapping/scanmatcher
+	cp $(SOURCE_DIR)/log/*.h include/gmapping/log
+	cp $(SOURCE_DIR)/grid/*.h include/gmapping/grid
+	touch installed
+
+wipe: clean
+	rm -rf build
+
+wiped: Makefile.gmapping $(PATCH)
+	make -f Makefile.gmapping wipe
+	touch wiped
+
+clean:
+	-cd $(SOURCE_DIR) && make clean
+	rm -rf include lib installed
+
