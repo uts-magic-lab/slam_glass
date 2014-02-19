@@ -77,7 +77,6 @@ inline bool GridSlamProcessor::resample(const double* plainReading, int adaptSiz
   }
   
   if (m_neff<m_resampleThreshold*m_particles.size()){		
-    
     if (m_infoStream)
       m_infoStream  << "*************RESAMPLE***************" << std::endl;
     
@@ -136,16 +135,18 @@ inline bool GridSlamProcessor::resample(const double* plainReading, int adaptSiz
     std::cerr << "Deleting old particles..." ;
     m_particles.clear();
     std::cerr << "Done" << std::endl;
-    std::cerr << "Copying Particles and  Registering  scans...";
+    std::cerr << "Copying Particles and Registering scans...";
     for (ParticleVector::iterator it=temp.begin(); it!=temp.end(); it++){
       it->setWeight(0);
       m_matcher.invalidateActiveArea();
       m_matcher.registerScan(it->map, it->pose, plainReading, NULL);
+      //m_matcher.registerScanG(it->map, it->pose, plainReading, NULL);
       m_particles.push_back(*it);
     }
     std::cerr  << " Done" <<std::endl;
     hasResampled = true;
-  } else {
+  }
+  else {
     int index=0;
     std::cerr << "Registering Scans:";
     TNodeVector::iterator node_it=oldGeneration.begin();

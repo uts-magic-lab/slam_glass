@@ -231,7 +231,6 @@ double ScanMatcher::registerScanG(ScanMatcherMap& map, const OrientedPoint& p, c
   lp.theta+=m_laserPose.theta;
   IntPoint p0=map.world2map(lp);
 
-
   const double * angle=m_laserAngles+m_initialBeamsSkip;
   double esum=0;
   for (const double* r=readings+m_initialBeamsSkip; r<readings+m_laserBeams; r++, angle++)
