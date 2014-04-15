@@ -177,7 +177,7 @@ double ScanMatcher::registerScan(ScanMatcherMap& map, const OrientedPoint& p, co
   const double * angle = m_laserAngles+m_initialBeamsSkip;
   double esum = 0;
   for (const double* r=readings+m_initialBeamsSkip; r<readings+m_laserBeams; r++, angle++) {
-    if (m_generateMap){
+    if (m_generateMap) {
       double d=*r;
       if (d>m_laserMaxRange)
         continue;
@@ -225,40 +225,37 @@ double ScanMatcher::registerScanG(ScanMatcherMap& map, const OrientedPoint& p, c
   //this operation replicates the cells that will be changed in the registration operation
   map.storage().allocActiveArea();
 
-  OrientedPoint lp=p;
-  lp.x+=cos(p.theta)*m_laserPose.x-sin(p.theta)*m_laserPose.y;
-  lp.y+=sin(p.theta)*m_laserPose.x+cos(p.theta)*m_laserPose.y;
-  lp.theta+=m_laserPose.theta;
-  IntPoint p0=map.world2map(lp);
+  OrientedPoint lp = p;
+  lp.x += cos(p.theta) * m_laserPose.x - sin(p.theta) * m_laserPose.y;
+  lp.y += sin(p.theta) * m_laserPose.x + cos(p.theta) * m_laserPose.y;
+  lp.theta += m_laserPose.theta;
+  IntPoint p0 = map.world2map(lp);
 
-  const double * angle=m_laserAngles+m_initialBeamsSkip;
-  double esum=0;
-  for (const double* r=readings+m_initialBeamsSkip; r<readings+m_laserBeams; r++, angle++)
-    if (m_generateMap){
-      double d=*r;
-      if (d>m_laserMaxRange||d==0.0)
+  const double * angle = m_laserAngles + m_initialBeamsSkip;
+  for (const double* r = readings + m_initialBeamsSkip; r < readings + m_laserBeams; r++, angle++)
+    if (m_generateMap) {
+      double d = *r;
+      if (d > m_laserMaxRange || d == 0.0)
         continue;
-      if (d>m_usableRange)
-        d=m_usableRange;
-      Point phit=lp+Point(d*cos(lp.theta+*angle),d*sin(lp.theta+*angle));
-      IntPoint p1=map.world2map(phit);
+
+      if (d > m_usableRange)
+        d = m_usableRange;
+
+      Point phit= lp + Point( d * cos( lp.theta + *angle), d * sin( lp.theta + *angle ) );
+      IntPoint p1 = map.world2map( phit );
       GridLineTraversalLine line;
-      line.points=m_linePoints;
-      GridLineTraversal::gridLine(p0, p1, &line);
-      for (int i=0; i<line.num_points-1; i++){
-        PointAccumulator& cell=map.cell(line.points[i]);
-        double e=-cell.entropy();
+      line.points = m_linePoints;
+      GridLineTraversal::gridLine( p0, p1, &line );
+      for (int i = 0; i < line.num_points - 1; i++) {
+        PointAccumulator& cell = map.cell( line.points[i] );
         cell.update(false, Point(0,0));
-        e+=cell.entropy();
-        esum+=e;
       }
       if (d<m_usableRange){
         double e=-map.cell(p1).entropy();
         map.cell(p1).update(true, phit);
-        e+=map.cell(p1).entropy();
-        esum+=e;
       }
-    } else {
+    }
+    else {
       if (*r>m_laserMaxRange||*r>m_usableRange||*r==0.0) continue;
       Point phit=lp;
       phit.x+=*r*cos(lp.theta+*angle);
@@ -267,8 +264,11 @@ double ScanMatcher::registerScanG(ScanMatcherMap& map, const OrientedPoint& p, c
       assert(p1.x>=0 && p1.y>=0);
       map.cell(p1).update(true,phit);
     }
+  // if glass is detected, you need to call a method as the following
+  // timestamp is in sensor reading. pose == lp, r== *r; phi == *angle check??
+  // gsp->dectectedglass( pose, r/phi, timestamp );
   //cout  << "informationGain=" << -esum << endl;
-  return esum;
+  return 0.0;
 }
 
 double ScanMatcher::icpOptimize(OrientedPoint& pnew, const ScanMatcherMap& map, const OrientedPoint& init, const double* readings) const{
