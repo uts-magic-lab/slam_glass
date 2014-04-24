@@ -160,7 +160,7 @@ void ScanMatcher::computeActiveArea(ScanMatcherMap& map, const OrientedPoint& p,
 	m_activeAreaComputed=true;
 }
 
-double ScanMatcher::registerScan(ScanMatcherMap& map, const OrientedPoint& p, const double* readings, const double* intensities)
+double ScanMatcher::registerScan(ScanMatcherMap& map, const OrientedPoint& p, const double* readings)
 {
   if (!m_activeAreaComputed)
     computeActiveArea(map, p, readings);
@@ -217,58 +217,50 @@ double ScanMatcher::registerScan(ScanMatcherMap& map, const OrientedPoint& p, co
   return esum;
 }
 
-double ScanMatcher::registerScanG(ScanMatcherMap& map, const OrientedPoint& p, const double* readings, const double* intensities)  // Register scan for glass detection only
+int ScanMatcher::registerScanG( GlassDetectionCache& glassmap, const OrientedPoint& p, const double* readings,
+    const double timestamp, const double* intensities )  // Register scan for glass detection only
 {
-  if (!m_activeAreaComputed)
-    computeActiveArea(map, p, readings);
+  int detectedPoints = 0.0;
 
-  //this operation replicates the cells that will be changed in the registration operation
-  map.storage().allocActiveArea();
+  OrientedPoint pose = p;
+  pose.x += cos(p.theta) * m_laserPose.x - sin(p.theta) * m_laserPose.y;
+  pose.y += sin(p.theta) * m_laserPose.x + cos(p.theta) * m_laserPose.y;
+  pose.theta += m_laserPose.theta;
 
-  OrientedPoint lp = p;
-  lp.x += cos(p.theta) * m_laserPose.x - sin(p.theta) * m_laserPose.y;
-  lp.y += sin(p.theta) * m_laserPose.x + cos(p.theta) * m_laserPose.y;
-  lp.theta += m_laserPose.theta;
-  IntPoint p0 = map.world2map(lp);
+  //IntPoint p0 = map.world2map(lp);
+  double detectionGrad = 0.5; // tune this value
+  int peakRange = 4; // tune this value
+  double distAllowance = 0.5; // tune this value
 
   const double * angle = m_laserAngles + m_initialBeamsSkip;
-  for (const double* r = readings + m_initialBeamsSkip; r < readings + m_laserBeams; r++, angle++)
-    if (m_generateMap) {
-      double d = *r;
-      if (d > m_laserMaxRange || d == 0.0)
-        continue;
-
-      if (d > m_usableRange)
-        d = m_usableRange;
-
-      Point phit= lp + Point( d * cos( lp.theta + *angle), d * sin( lp.theta + *angle ) );
-      IntPoint p1 = map.world2map( phit );
-      GridLineTraversalLine line;
-      line.points = m_linePoints;
-      GridLineTraversal::gridLine( p0, p1, &line );
-      for (int i = 0; i < line.num_points - 1; i++) {
-        PointAccumulator& cell = map.cell( line.points[i] );
-        cell.update(false, Point(0,0));
-      }
-      if (d<m_usableRange){
-        double e=-map.cell(p1).entropy();
-        map.cell(p1).update(true, phit);
+  const double * intensity = intensities + m_initialBeamsSkip;
+  double int0 = *intensity;
+  double * hasSigAt = NULL; // the pointer to the reading index that has the positive gradient for glass detection
+  for (const double * r = readings + m_initialBeamsSkip; r < readings + m_laserBeams; r++, angle++, intensity++) {
+    double distance = *r;
+    if (distance > m_laserMaxRange || distance > m_usableRange) {
+      continue;
+    }
+    double int1 = *intensity;
+    double gradint = int1 - int0;
+    if (gradint >= detectionGrad) {
+      hasSigAt = (double *)(r-1);
+    }
+    else if (gradint < -detectionGrad) {
+      int prang = (int)(r - hasSigAt);
+      if (hasSigAt &&  prang <= peakRange && fabs(*hasSigAt - distance) < distAllowance) {
+        // get mid/peak of the detected glass laser data curve
+        double * peak = hasSigAt + (prang >> 1);
+        double * peakAng = ((int)(peak - (readings + m_initialBeamsSkip))) + m_laserAngles + m_initialBeamsSkip;
+        GlassInfo data = { pose, *peak, *peakAng, timestamp };
+        glassmap.push_back( data );
+        detectedPoints++;
+        hasSigAt = NULL;
       }
     }
-    else {
-      if (*r>m_laserMaxRange||*r>m_usableRange||*r==0.0) continue;
-      Point phit=lp;
-      phit.x+=*r*cos(lp.theta+*angle);
-      phit.y+=*r*sin(lp.theta+*angle);
-      IntPoint p1=map.world2map(phit);
-      assert(p1.x>=0 && p1.y>=0);
-      map.cell(p1).update(true,phit);
-    }
-  // if glass is detected, you need to call a method as the following
-  // timestamp is in sensor reading. pose == lp, r== *r; phi == *angle check??
-  // gsp->dectectedglass( pose, r/phi, timestamp );
-  //cout  << "informationGain=" << -esum << endl;
-  return 0.0;
+    int0 = int1;
+  }
+  return detectedPoints;
 }
 
 double ScanMatcher::icpOptimize(OrientedPoint& pnew, const ScanMatcherMap& map, const OrientedPoint& init, const double* readings) const{

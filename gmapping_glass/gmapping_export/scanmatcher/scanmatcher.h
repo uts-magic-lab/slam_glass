@@ -21,8 +21,8 @@ class ScanMatcher{
 		double optimize(OrientedPoint& pnew, const ScanMatcherMap& map, const OrientedPoint& p, const double* readings) const;
 		double optimize(OrientedPoint& mean, CovarianceMatrix& cov, const ScanMatcherMap& map, const OrientedPoint& p, const double* readings) const;
 		
-		double registerScan(ScanMatcherMap& map, const OrientedPoint& p, const double* readings, const double* intensities );
-		double registerScanG(ScanMatcherMap& map, const OrientedPoint& p, const double* readings, const double* intensities ); //register scan for glass only
+		double registerScan(ScanMatcherMap& map, const OrientedPoint& p, const double* readings);
+		int registerScanG(GlassDetectionCache& glassmap, const OrientedPoint& p, const double* readings, const double timestamp, const double* intensities);
 		void setLaserParameters
 			(unsigned int beams, double* angles, const OrientedPoint& lpose);
 		void setMatchingParameters

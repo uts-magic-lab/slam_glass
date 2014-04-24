@@ -23,15 +23,16 @@ namespace GMapping {
      has its own map and robot pose.<br> This implementation works
      as follows: each time a new pair odometry/laser reading is
      received, the particle's robot pose is updated according to the
-     motion model.  This pose is subsequently used for initalizing a
-     scan matching algorithm.  The scanmatcher performs a local
-     optimization for each particle.  It is initialized with the
+     motion model.  This pose is subsequently used for initialising a
+     scan matching algorithm. The scanmatcher performs a local
+     optimization for each particle.  It is initialised with the
      pose drawn from the motion model, and the pose is corrected
      according to the each particle map.<br>
      In order to avoid unnecessary computation the filter state is updated 
      only when the robot moves more than a given threshold.
   */
-  class GridSlamProcessor{
+class GridSlamProcessor
+{
   public:
 
     
@@ -39,7 +40,7 @@ namespace GMapping {
        Each node of a tree has a pointer to its parent and a counter indicating the number of childs of a node.
        The tree is updated in a way consistent with the operation performed on the particles.
    */
-    struct TNode{
+    struct TNode {
       /**Constructs a node of the trajectory tree.
        @param pose:      the pose of the robot in the trajectory
        @param weight:    the weight of the particle at that point in the trajectory
@@ -85,7 +86,7 @@ namespace GMapping {
     typedef std::deque<GridSlamProcessor::TNode*> TNodeDeque;
     
     /**This class defines a particle of the filter. Each particle has a map, a pose, a weight and retains the current node in the trajectory tree*/
-    struct Particle{
+    struct Particle {
       /**constructs a particle, given a map
 	 @param map: the particle map
       */
@@ -121,10 +122,9 @@ namespace GMapping {
       /** Entry to the trajectory tree */
       TNode* node; 
     };
-	
-    
+
     typedef std::vector<Particle> ParticleVector;
-    
+
     /** Constructs a GridSlamProcessor, initialized with the default parameters */
     GridSlamProcessor();
 
@@ -173,6 +173,7 @@ namespace GMapping {
     
     inline const std::vector<unsigned int>& getIndexes() const{return m_indexes; }
     int getBestParticleIndex() const;
+
     //callbacks
     virtual void onOdometryUpdate();
     virtual void onResampleUpdate();
@@ -251,8 +252,6 @@ namespace GMapping {
     unsigned int m_beams;
     double last_update_time_;
     double period_;
-	
-    
     
     /**the particles*/
     ParticleVector m_particles;
@@ -266,6 +265,8 @@ namespace GMapping {
     /**the motion model*/
     MotionModel m_motionModel;
 
+    GlassDetectionCache m_glassCache;
+
     /**this sets the neff based resampling threshold*/
     PARAM_SET_GET(double, resampleThreshold, protected, public, public);
       
@@ -275,6 +276,7 @@ namespace GMapping {
     OrientedPoint m_odoPose;
     OrientedPoint m_pose;
     double m_linearDistance, m_angularDistance;
+
     PARAM_GET(double, neff, protected, public);
       
     //processing parameters (size of the map)
@@ -306,7 +308,6 @@ namespace GMapping {
 
     // stream in which to write the messages
     std::ostream& m_infoStream;
-    
     
     // the functions below performs side effect on the internal structure,
     //should be called only inside the processScan method

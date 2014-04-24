@@ -626,7 +626,7 @@ SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan)
 
     matcher.invalidateActiveArea();
     matcher.computeActiveArea(smap, n->pose, &((*n->reading)[0]));
-    matcher.registerScan(smap, n->pose, &((*n->reading)[0]), NULL );
+    matcher.registerScan(smap, n->pose, &((*n->reading)[0]));
   }
 
   // the map may have expanded, so resize ros message as well
