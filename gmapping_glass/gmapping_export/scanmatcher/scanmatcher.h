@@ -23,6 +23,7 @@ class ScanMatcher{
 		
 		double registerScan(ScanMatcherMap& map, const OrientedPoint& p, const double* readings);
 		int registerScanG(GlassDetectionCache& glassmap, const OrientedPoint& p, const double* readings, const double timestamp, const double* intensities);
+
 		void setLaserParameters
 			(unsigned int beams, double* angles, const OrientedPoint& lpose);
 		void setMatchingParameters

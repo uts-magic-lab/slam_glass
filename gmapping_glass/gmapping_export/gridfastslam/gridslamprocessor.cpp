@@ -20,9 +20,10 @@ using namespace std;
 GridSlamProcessor::GridSlamProcessor(): m_infoStream(cout)
 {
   period_ = 5.0;
-  m_obsSigmaGain=1;
-  m_resampleThreshold=0.5;
-  m_minimumScore=0.0;
+  m_obsSigmaGain = 1;
+  m_resampleThreshold = 0.5;
+  m_minimumScore = 0.0;
+  m_glassMatchIndex = 0;
 }
   
 GridSlamProcessor::GridSlamProcessor(const GridSlamProcessor& gsp) :
@@ -49,8 +50,12 @@ GridSlamProcessor::GridSlamProcessor(const GridSlamProcessor& gsp) :
   m_odoPose=gsp.m_odoPose;
   m_linearDistance=gsp.m_linearDistance;
   m_angularDistance=gsp.m_angularDistance;
+  m_g_linearDistance=gsp.m_g_linearDistance;
+  m_g_angularDistance=gsp.m_g_angularDistance;
   m_neff=gsp.m_neff;
   m_glassCache=gsp.m_glassCache;
+  m_glassMatchIndex=gsp.m_glassMatchIndex;
+  m_g_drift=gsp.m_g_drift;
 
   cerr << "FILTER COPY CONSTRUCTOR" << endl;
   cerr << "m_odoPose=" << m_odoPose.x << " " <<m_odoPose.y << " " << m_odoPose.theta << endl;
@@ -96,7 +101,7 @@ GridSlamProcessor::GridSlamProcessor(std::ostream& infoS) :
   m_obsSigmaGain=1;
   m_resampleThreshold=0.5;
   m_minimumScore=0.;
-
+  m_glassMatchIndex = 0;
 }
 
 GridSlamProcessor* GridSlamProcessor::clone() const
@@ -173,6 +178,8 @@ node=node->parent;
   }
 
   m_glassCache.clear();
+  m_glassMatchIndex = 0;
+  m_g_drift.x = m_g_drift.y = m_g_drift.theta = 0.0;
 
 # ifdef MAP_CONSISTENCY_CHECK
   cerr << __PRETTY_FUNCTION__ << ": performing predestruction_fit_test" << endl;
@@ -290,6 +297,8 @@ void GridSlamProcessor::init(unsigned int size, double xmin, double ymin, double
   m_xmax=xmax;
   m_ymax=ymax;
   m_delta=delta;
+  m_glassMatchIndex = 0;
+
   if (m_infoStream) {
     m_infoStream
       << " -xmin "<< m_xmin
@@ -322,7 +331,7 @@ void GridSlamProcessor::init(unsigned int size, double xmin, double ymin, double
   m_neff=(double)size;
   m_count=0;
   m_readingCount=0;
-  m_linearDistance=m_angularDistance=0;
+  m_linearDistance = m_angularDistance = m_g_linearDistance = m_g_angularDistance = 0.0;
 }
 
 void GridSlamProcessor::processTruePos(const OdometryReading& o)
@@ -374,10 +383,12 @@ bool GridSlamProcessor::processScan(const RangeReading & reading, int adaptParti
   onOdometryUpdate();
 
   // accumulate the robot translation and rotation
-  OrientedPoint move=relPose-m_odoPose;
-  move.theta=atan2(sin(move.theta), cos(move.theta));
-  m_linearDistance+=sqrt(move*move);
-  m_angularDistance+=fabs(move.theta);
+  OrientedPoint move = relPose-m_odoPose;
+  move.theta = atan2(sin(move.theta), cos(move.theta));
+  m_linearDistance += sqrt(move*move);
+  m_angularDistance += fabs(move.theta);
+  m_g_linearDistance = m_linearDistance;
+  m_g_angularDistance = m_g_angularDistance;
 
   // if the robot jumps throw a warning
   if (m_linearDistance>m_distanceThresholdCheck){
@@ -395,9 +406,28 @@ bool GridSlamProcessor::processScan(const RangeReading & reading, int adaptParti
     cerr << "***********************************************************************" << endl;
   }
 
-  m_odoPose=relPose;
+  m_odoPose = relPose;
 
-  bool processed=false;
+  bool processed = false;
+
+  //this is for converting the reading in a scan-matcher feedable form
+  assert(reading.size() == m_beams);
+  double * plainReading = NULL;
+
+  // do glass detection
+  if (m_g_linearDistance>=m_linearThresholdDistance / 10.0 ||
+      m_g_angularDistance>=m_angularThresholdDistance ||
+      (period_ >= 0.0 && (reading.getTime() - last_update_time_) > period_))
+  {
+    if (!plainReading) {
+      plainReading = new double[m_beams];
+      for(unsigned int i = 0; i<m_beams; i++) {
+        plainReading[i] = reading[i];
+      }
+    }
+    m_matcher.registerScanG( m_glassCache, m_odoPose, plainReading, reading.getTime(), intensities );
+    m_g_linearDistance = m_g_angularDistance = 0.0;
+  }
 
   // process a scan only if the robot has travelled a given distance or a certain amount of time has elapsed
   if (! m_count ||
@@ -407,7 +437,7 @@ bool GridSlamProcessor::processScan(const RangeReading & reading, int adaptParti
   {
     last_update_time_ = reading.getTime();
 
-    if (m_outputStream.is_open()){
+    if (m_outputStream.is_open()) {
       m_outputStream << setiosflags(ios::fixed) << setprecision(6);
       m_outputStream << "FRAME " <<  m_readingCount;
       m_outputStream << " " << m_linearDistance;
@@ -422,18 +452,18 @@ bool GridSlamProcessor::processScan(const RangeReading & reading, int adaptParti
     cerr << "Laser Pose= " << reading.getPose().x << " " << reading.getPose().y
          << " " << reading.getPose().theta << endl;
     
-    //this is for converting the reading in a scan-matcher feedable form
-    assert(reading.size()==m_beams);
-    double * plainReading = new double[m_beams];
-    for(unsigned int i=0; i<m_beams; i++) {
-      plainReading[i]=reading[i];
-    }
     m_infoStream << "m_count " << m_count << endl;
+
+    if (!plainReading) {
+      plainReading = new double[m_beams];
+      for(unsigned int i = 0; i<m_beams; i++) {
+        plainReading[i] = reading[i];
+      }
+    }
 
     RangeReading* reading_copy = new RangeReading(reading.size(), &(reading[0]),
                                     static_cast<const RangeSensor*>(reading.getSensor()),
                                     reading.getTime());
-
     if (m_count>0) {
       scanMatch(plainReading);
       if (m_outputStream.is_open()) {
@@ -455,7 +485,7 @@ bool GridSlamProcessor::processScan(const RangeReading & reading, int adaptParti
       }
 
       onScanmatchUpdate();
-      
+
       updateTreeWeights(false);
 
       if (m_infoStream) {
@@ -467,7 +497,7 @@ bool GridSlamProcessor::processScan(const RangeReading & reading, int adaptParti
       }
       resample(plainReading, adaptParticles, reading_copy, intensities);
 // assert(0); // for debugging
-      
+
     }
     else {
       m_infoStream << "Registering First Scan"<< endl;
@@ -477,7 +507,7 @@ bool GridSlamProcessor::processScan(const RangeReading & reading, int adaptParti
         m_matcher.registerScan(it->map, it->pose, plainReading );
 
         // cyr: not needed anymore, particles refer to the root in the beginning!
-        TNode* node=new	TNode(it->pose, 0., it->node,  0);
+        TNode* node = new	TNode(it->pose, 0., it->node, 0);
         //node->reading=0;
         node->reading = reading_copy;
         it->node=node;
@@ -486,18 +516,20 @@ bool GridSlamProcessor::processScan(const RangeReading & reading, int adaptParti
     //		cerr  << "Tree: normalizing, resetting and propagating weights at the end..." ;
     updateTreeWeights(false);
     //		cerr  << ".done!" <<endl;
-
-    delete [] plainReading;
-    m_lastPartPose=m_odoPose; //update the past pose for the next iteration
-    m_linearDistance=0;
-    m_angularDistance=0;
-    m_count++;
-    processed=true;
+    m_lastPartPose = m_odoPose; //update the past pose for the next iteration
+    m_linearDistance = 0;
+    m_angularDistance = 0;
 
     //keep ready for the next step
     for (ParticleVector::iterator it=m_particles.begin(); it!=m_particles.end(); it++){
       it->previousPose=it->pose;
     }
+
+    if (plainReading) {
+      delete [] plainReading;
+    }
+    m_count++;
+    processed = true;
 
   }
   if (m_outputStream.is_open()) {
@@ -507,11 +539,42 @@ bool GridSlamProcessor::processScan(const RangeReading & reading, int adaptParti
   return processed;
 }
 
+void GridSlamProcessor::glassMatch(ScanMatcherMap& map, const OrientedPoint& pose, const double timestamp)
+{
+  size_t csize = m_glassCache.size();
+  if (m_glassMatchIndex >= csize) {
+    ROS_ERROR( "Invalid glass match index" );
+    return;
+  }
+  unsigned int i = m_glassMatchIndex;
+  unsigned int foundIndex = 0;
+
+  while (i < csize) {
+    if (m_glassCache[i].timestamp >= timestamp) {
+      foundIndex = i;
+      break;
+    }
+    i++;
+  }
+  if (i < csize) { // found the match
+    double timediff = timestamp - m_glassCache[m_glassMatchIndex].timestamp;
+    m_g_drift = pose - m_glassCache[foundIndex].pose - m_g_drift;
+    OrientedPoint v; // drift rate del pose / del time.
+    v.x = m_g_drift.x / timediff;v.y = m_g_drift.y / timediff; v.theta = m_g_drift.theta / timediff;
+    double ts = m_glassCache[m_glassMatchIndex].timestamp;
+    for (int j = m_glassMatchIndex; j < foundIndex; j++) {
+      OrientedPoint cp = m_glassCache[j].pose + v * (m_glassCache[j].timestamp - ts); // correct for pose stored in glass cache
+      // TODO: need to correct r and phi in the cache and draw them correctly in smmap.
+    }
+    m_glassMatchIndex = foundIndex;
+  }
+}
+
 std::ofstream& GridSlamProcessor::outputStream()
 {
   return m_outputStream;
 }
-  
+
 std::ostream& GridSlamProcessor::infoStream()
 {
   return m_infoStream;

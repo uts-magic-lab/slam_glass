@@ -154,6 +154,8 @@ class GridSlamProcessor
     void processTruePos(const OdometryReading& odometry);
     bool processScan(const RangeReading & reading, int adaptParticles = 0, double* intensities = NULL);
     
+    void glassMatch(ScanMatcherMap& map, const OrientedPoint& pose, const double timestamp);
+
     /**This method copies the state of the filter in a tree.
      The tree is represented through reversed pointers (each node has a pointer to its parent).
      The leafs are stored in a vector, whose size is the same as the number of particles.
@@ -266,6 +268,8 @@ class GridSlamProcessor
     MotionModel m_motionModel;
 
     GlassDetectionCache m_glassCache;
+    unsigned int m_glassMatchIndex;
+    OrientedPoint m_g_drift;
 
     /**this sets the neff based resampling threshold*/
     PARAM_SET_GET(double, resampleThreshold, protected, public, public);
@@ -276,6 +280,7 @@ class GridSlamProcessor
     OrientedPoint m_odoPose;
     OrientedPoint m_pose;
     double m_linearDistance, m_angularDistance;
+    double m_g_linearDistance, m_g_angularDistance;
 
     PARAM_GET(double, neff, protected, public);
       
