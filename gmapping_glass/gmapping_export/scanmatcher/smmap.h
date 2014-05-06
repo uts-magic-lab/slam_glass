@@ -14,6 +14,7 @@ struct PointAccumulator
 {
   typedef point<float> FloatPoint;
   FloatPoint acc;
+  bool glassDetected;
   int n, visits;
   static PointAccumulator* unknown_ptr;
 
@@ -21,8 +22,8 @@ struct PointAccumulator
   PointAccumulator(int i=-1): acc(0,0), n(0), visits(0){assert(i==-1);}
   */
   /*after begin*/
-  PointAccumulator(): acc(0,0), n(0), visits(0) {}
-  PointAccumulator(int i): acc(0,0), n(0), visits(0) { assert(i==-1);}
+  PointAccumulator(): acc(0,0), n(0), visits(0), glassDetected( false ) {}
+  PointAccumulator(int i): acc(0,0), n(0), visits(0), glassDetected(false) { assert(i==-1);}
   /*after end*/
   Point mean() const { return 1./n*Point(acc.x, acc.y); }
 
@@ -31,6 +32,8 @@ struct PointAccumulator
   static const PointAccumulator& Unknown();
   void add(const PointAccumulator& p);
   void update( int value, const Point& p = Point(0,0) );
+  void updateGlass() { glassDetected = true; }; // this is only invoked while we are producing the final map
+  bool isGlassDetected() { return glassDetected; }
   double entropy() const;
 };
 

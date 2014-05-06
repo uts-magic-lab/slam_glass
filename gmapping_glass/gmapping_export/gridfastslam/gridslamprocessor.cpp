@@ -543,7 +543,7 @@ void GridSlamProcessor::glassMatch(ScanMatcherMap& map, const OrientedPoint& pos
 {
   size_t csize = m_glassCache.size();
   if (m_glassMatchIndex >= csize) {
-    ROS_ERROR( "Invalid glass match index" );
+    printf( "Invalid glass match index" );
     return;
   }
   unsigned int i = m_glassMatchIndex;
@@ -558,15 +558,22 @@ void GridSlamProcessor::glassMatch(ScanMatcherMap& map, const OrientedPoint& pos
   }
   if (i < csize) { // found the match
     double timediff = timestamp - m_glassCache[m_glassMatchIndex].timestamp;
-    m_g_drift = pose - m_glassCache[foundIndex].pose - m_g_drift;
-    OrientedPoint v; // drift rate del pose / del time.
-    v.x = m_g_drift.x / timediff;v.y = m_g_drift.y / timediff; v.theta = m_g_drift.theta / timediff;
+    OrientedPoint v = pose - m_glassCache[foundIndex].pose - m_g_drift; // drift rate del pose / del time.
+    v.x = v.x / timediff;v.y = v.y / timediff; v.theta = v.theta / timediff;
     double ts = m_glassCache[m_glassMatchIndex].timestamp;
-    for (int j = m_glassMatchIndex; j < foundIndex; j++) {
+    for (int j = m_glassMatchIndex + 1; j <= foundIndex; j++) {
       OrientedPoint cp = m_glassCache[j].pose + v * (m_glassCache[j].timestamp - ts); // correct for pose stored in glass cache
       // TODO: need to correct r and phi in the cache and draw them correctly in smmap.
+      Point phit = cp;
+      phit.x += m_glassCache[j].radius * cos(cp.theta + m_glassCache[j].phi);
+      phit.y += m_glassCache[j].radius * sin(cp.theta + m_glassCache[j].phi);
+      //TODO: Check neighbour points are also required to be marked?
+      IntPoint p1 = map.world2map( phit );
+      assert(p1.x>=0 && p1.y>=0);
+      map.cell(p1).updateGlass();
     }
     m_glassMatchIndex = foundIndex;
+    m_g_drift = pose - m_glassCache[foundIndex].pose;
   }
 }
 

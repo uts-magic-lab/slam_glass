@@ -658,18 +658,20 @@ SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan)
     {
       /// @todo Sort out the unknown vs. free vs. obstacle thresholding
       GMapping::IntPoint p(x, y);
-      double occ=smap.cell(p);
+      double occ = smap.cell(p);
       assert(occ <= 1.0);
       if(occ < -0.9999)
-        map_.map.data[MAP_IDX(map_.map.info.width, x, y)] = -1;
-      else if (occ == -0.3) // Add glass case
       {
-        map_.map.data[MAP_IDX(map_.map.info.width, x, y)] = 80;
-        printf(".........glass detected .....................\n");
+        map_.map.data[MAP_IDX(map_.map.info.width, x, y)] = -1;
       }
       else if(occ > occ_thresh_)
       {
         map_.map.data[MAP_IDX(map_.map.info.width, x, y)] = 100;
+      }
+      else if (smap.cell(p).isGlassDetected()) // Add glass case
+      {
+        map_.map.data[MAP_IDX(map_.map.info.width, x, y)] = 80;
+        printf(".........glass detected .....................\n");
       }
       else {
         map_.map.data[MAP_IDX(map_.map.info.width, x, y)] = 0;
