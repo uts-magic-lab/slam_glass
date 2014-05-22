@@ -228,9 +228,9 @@ int ScanMatcher::registerScanG( GlassDetectionCache& glassmap, const OrientedPoi
   pose.theta += m_laserPose.theta;
 
   //IntPoint p0 = map.world2map(lp);
-  double detectionGrad = 0.5; // tune this value
-  int peakRange = 4; // tune this value
-  double distAllowance = 0.5; // tune this value
+  double detectionGrad = 4000.0; // tune this value
+  int peakRange = 5; // tune this value
+  double distAllowance = 0.2; // tune this value
 
   const double * angle = m_laserAngles + m_initialBeamsSkip;
   const double * intensity = intensities + m_initialBeamsSkip;
@@ -243,7 +243,7 @@ int ScanMatcher::registerScanG( GlassDetectionCache& glassmap, const OrientedPoi
     }
     double int1 = *intensity;
     double gradint = int1 - int0;
-    if (gradint >= detectionGrad) {
+    if (int1 > 8000 && gradint >= detectionGrad) {
       hasSigAt = (double *)(r-1);
     }
     else if (gradint < -detectionGrad) {
@@ -252,7 +252,11 @@ int ScanMatcher::registerScanG( GlassDetectionCache& glassmap, const OrientedPoi
         // get mid/peak of the detected glass laser data curve
         double * peak = hasSigAt + (prang >> 1);
         double * peakAng = ((int)(peak - (readings + m_initialBeamsSkip))) + m_laserAngles + m_initialBeamsSkip;
-        GlassInfo data = { pose, *peak, *peakAng, timestamp };
+        /*for (int k = 0; k < 5; k++) {
+        	GlassInfo data = { pose, hasSigAt[k], , timestamp };
+            glassmap.push_back( data );
+        }*/
+    	GlassInfo data = { pose, *peak, *peakAng, timestamp };
         glassmap.push_back( data );
         detectedPoints++;
         hasSigAt = NULL;

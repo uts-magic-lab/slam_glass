@@ -627,8 +627,9 @@ SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan)
     matcher.invalidateActiveArea();
     matcher.computeActiveArea(smap, n->pose, &((*n->reading)[0]));
     matcher.registerScan(smap, n->pose, &((*n->reading)[0]));
-    gsp_->glassMatch(smap, n->pose, n->reading->getTime());
+    //gsp_->glassMatch(smap, n->pose, n->reading->getTime());
   }
+  gsp_->glassMatch(smap, best.node->pose, best.node->reading->getTime());
 
   // the map may have expanded, so resize ros message as well
   if(map_.map.info.width != (unsigned int) smap.getMapSizeX() || map_.map.info.height != (unsigned int) smap.getMapSizeY()) {
@@ -670,8 +671,8 @@ SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan)
       }
       else if (smap.cell(p).isGlassDetected()) // Add glass case
       {
-        map_.map.data[MAP_IDX(map_.map.info.width, x, y)] = 80;
-        printf(".........glass detected .....................\n");
+        map_.map.data[MAP_IDX(map_.map.info.width, x, y)] = 100;
+        printf(".........glass detected 100 null map.....................\n");
       }
       else {
         map_.map.data[MAP_IDX(map_.map.info.width, x, y)] = 0;

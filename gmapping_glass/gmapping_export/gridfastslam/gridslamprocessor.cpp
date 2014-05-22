@@ -542,13 +542,14 @@ bool GridSlamProcessor::processScan(const RangeReading & reading, int adaptParti
 void GridSlamProcessor::glassMatch(ScanMatcherMap& map, const OrientedPoint& pose, const double timestamp)
 {
   size_t csize = m_glassCache.size();
-  if (m_glassMatchIndex >= csize) {
-    printf( "Invalid glass match index" );
-    return;
-  }
-  unsigned int i = m_glassMatchIndex;
+  printf( "m_glasscache size %d\n", csize );
+  //if (m_glassMatchIndex >= csize) {
+    //printf( "Invalid glass match index" );
+    //return;
+  //}
+  unsigned int i = 0; //m_glassMatchIndex;
   unsigned int foundIndex = 0;
-
+  m_g_drift.x = m_g_drift.y = m_g_drift.theta = 0.0;
   while (i < csize) {
     if (m_glassCache[i].timestamp >= timestamp) {
       foundIndex = i;
@@ -557,11 +558,11 @@ void GridSlamProcessor::glassMatch(ScanMatcherMap& map, const OrientedPoint& pos
     i++;
   }
   if (i < csize) { // found the match
-    double timediff = timestamp - m_glassCache[m_glassMatchIndex].timestamp;
+    double timediff = timestamp - m_glassCache[foundIndex].timestamp;
     OrientedPoint v = pose - m_glassCache[foundIndex].pose - m_g_drift; // drift rate del pose / del time.
     v.x = v.x / timediff;v.y = v.y / timediff; v.theta = v.theta / timediff;
-    double ts = m_glassCache[m_glassMatchIndex].timestamp;
-    for (int j = m_glassMatchIndex + 1; j <= foundIndex; j++) {
+    double ts = m_glassCache[0].timestamp;
+    for (int j = 0 + 1; j <= foundIndex; j++) {
       OrientedPoint cp = m_glassCache[j].pose + v * (m_glassCache[j].timestamp - ts); // correct for pose stored in glass cache
       // TODO: need to correct r and phi in the cache and draw them correctly in smmap.
       Point phit = cp;
@@ -572,7 +573,7 @@ void GridSlamProcessor::glassMatch(ScanMatcherMap& map, const OrientedPoint& pos
       assert(p1.x>=0 && p1.y>=0);
       map.cell(p1).updateGlass();
     }
-    m_glassMatchIndex = foundIndex;
+    //m_glassMatchIndex = foundIndex;
     m_g_drift = pose - m_glassCache[foundIndex].pose;
   }
 }
