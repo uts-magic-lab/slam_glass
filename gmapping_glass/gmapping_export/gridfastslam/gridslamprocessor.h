@@ -105,7 +105,7 @@ class GridSlamProcessor
       /** The pose of the robot */
       OrientedPoint pose;
 
-      /** The pose of the robot at the previous time frame (used for computing thr odometry displacements) */
+      /** The pose of the robot at the previous time frame (used for computing the odometry displacements) */
       OrientedPoint previousPose;
 
       /** The weight of the particle */
@@ -142,6 +142,7 @@ class GridSlamProcessor
     
     //methods for accessing the parameters
     void setSensorMap(const SensorMap& smap);
+    void setStartupTime( const double time ) { start_up_time_ = time; }
     void init(unsigned int size, double xmin, double ymin, double xmax, double ymax, double delta, 
 	      OrientedPoint initialPose=OrientedPoint(0,0,0));
     void setMatchingParameters(double urange, double range, double sigma, int kernsize, double lopt, double aopt, 
@@ -154,7 +155,7 @@ class GridSlamProcessor
     void processTruePos(const OdometryReading& odometry);
     bool processScan(const RangeReading & reading, int adaptParticles = 0, double* intensities = NULL);
     
-    void glassMatch(ScanMatcherMap& map, const OrientedPoint& pose, const double timestamp);
+    void glassMatch(ScanMatcherMap& map, TNodeVector & bestTroj);
 
     /**This method copies the state of the filter in a tree.
      The tree is represented through reversed pointers (each node has a pointer to its parent).
@@ -254,6 +255,7 @@ class GridSlamProcessor
     unsigned int m_beams;
     double last_update_time_;
     double period_;
+    double start_up_time_;
     
     /**the particles*/
     ParticleVector m_particles;
@@ -268,8 +270,6 @@ class GridSlamProcessor
     MotionModel m_motionModel;
 
     GlassDetectionCache m_glassCache;
-    unsigned int m_glassMatchIndex;
-    OrientedPoint m_g_drift;
 
     /**this sets the neff based resampling threshold*/
     PARAM_SET_GET(double, resampleThreshold, protected, public, public);

@@ -87,7 +87,7 @@ inline bool GridSlamProcessor::resample(const double* plainReading, int adaptSiz
     if (m_outputStream.is_open()){
       m_outputStream << "RESAMPLE "<< m_indexes.size() << " ";
       for (std::vector<unsigned int>::const_iterator it=m_indexes.begin(); it!=m_indexes.end(); it++){
-	m_outputStream << *it <<  " ";
+        m_outputStream << *it <<  " ";
       }
       m_outputStream << std::endl;
     }
@@ -111,7 +111,7 @@ inline bool GridSlamProcessor::resample(const double* plainReading, int adaptSiz
       TNode* node=0;
       TNode* oldNode=oldGeneration[m_indexes[i]];
       //			cerr << i << "->" << m_indexes[i] << "B("<<oldNode->childs <<") ";
-      node=new	TNode(p.pose, 0, oldNode, 0);
+      node=new TNode(p.pose, 0, oldNode, 0);
       node->reading=reading;
       //			cerr << "A("<<node->parent->childs <<") " <<endl;
       

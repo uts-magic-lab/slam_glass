@@ -23,7 +23,6 @@ GridSlamProcessor::GridSlamProcessor(): m_infoStream(cout)
   m_obsSigmaGain = 1;
   m_resampleThreshold = 0.5;
   m_minimumScore = 0.0;
-  m_glassMatchIndex = 0;
 }
   
 GridSlamProcessor::GridSlamProcessor(const GridSlamProcessor& gsp) :
@@ -54,8 +53,6 @@ GridSlamProcessor::GridSlamProcessor(const GridSlamProcessor& gsp) :
   m_g_angularDistance=gsp.m_g_angularDistance;
   m_neff=gsp.m_neff;
   m_glassCache=gsp.m_glassCache;
-  m_glassMatchIndex=gsp.m_glassMatchIndex;
-  m_g_drift=gsp.m_g_drift;
 
   cerr << "FILTER COPY CONSTRUCTOR" << endl;
   cerr << "m_odoPose=" << m_odoPose.x << " " <<m_odoPose.y << " " << m_odoPose.theta << endl;
@@ -101,7 +98,6 @@ GridSlamProcessor::GridSlamProcessor(std::ostream& infoS) :
   m_obsSigmaGain=1;
   m_resampleThreshold=0.5;
   m_minimumScore=0.;
-  m_glassMatchIndex = 0;
 }
 
 GridSlamProcessor* GridSlamProcessor::clone() const
@@ -178,8 +174,6 @@ node=node->parent;
   }
 
   m_glassCache.clear();
-  m_glassMatchIndex = 0;
-  m_g_drift.x = m_g_drift.y = m_g_drift.theta = 0.0;
 
 # ifdef MAP_CONSISTENCY_CHECK
   cerr << __PRETTY_FUNCTION__ << ": performing predestruction_fit_test" << endl;
@@ -297,7 +291,6 @@ void GridSlamProcessor::init(unsigned int size, double xmin, double ymin, double
   m_xmax=xmax;
   m_ymax=ymax;
   m_delta=delta;
-  m_glassMatchIndex = 0;
 
   if (m_infoStream) {
     m_infoStream
@@ -312,7 +305,7 @@ void GridSlamProcessor::init(unsigned int size, double xmin, double ymin, double
   m_particles.clear();
   m_glassCache.clear();
 
-  TNode* node=new TNode(initialPose, 0, 0, 0);
+  TNode* node = new TNode(initialPose, 0, 0, 0);
   ScanMatcherMap lmap(Point(xmin+xmax, ymin+ymax)*.5, xmax-xmin, ymax-ymin, delta);
 
   for (unsigned int i=0; i<size; i++){
@@ -464,6 +457,7 @@ bool GridSlamProcessor::processScan(const RangeReading & reading, int adaptParti
     RangeReading* reading_copy = new RangeReading(reading.size(), &(reading[0]),
                                     static_cast<const RangeSensor*>(reading.getSensor()),
                                     reading.getTime());
+    reading_copy->setPose(reading.getPose());
     if (m_count>0) {
       scanMatch(plainReading);
       if (m_outputStream.is_open()) {
@@ -507,7 +501,7 @@ bool GridSlamProcessor::processScan(const RangeReading & reading, int adaptParti
         m_matcher.registerScan(it->map, it->pose, plainReading );
 
         // cyr: not needed anymore, particles refer to the root in the beginning!
-        TNode* node = new	TNode(it->pose, 0., it->node, 0);
+        TNode* node = new TNode(it->pose, 0., it->node, 0);
         //node->reading=0;
         node->reading = reading_copy;
         it->node=node;
@@ -539,42 +533,51 @@ bool GridSlamProcessor::processScan(const RangeReading & reading, int adaptParti
   return processed;
 }
 
-void GridSlamProcessor::glassMatch(ScanMatcherMap& map, const OrientedPoint& pose, const double timestamp)
+void GridSlamProcessor::glassMatch(ScanMatcherMap& map, TNodeVector & bestTroj)
 {
+  // going backwards through the bestTroj vector
+  OrientedPoint m_g_drift;
+
   size_t csize = m_glassCache.size();
-  printf( "m_glasscache size %d\n", csize );
-  //if (m_glassMatchIndex >= csize) {
-    //printf( "Invalid glass match index" );
-    //return;
-  //}
-  unsigned int i = 0; //m_glassMatchIndex;
-  unsigned int foundIndex = 0;
-  m_g_drift.x = m_g_drift.y = m_g_drift.theta = 0.0;
-  while (i < csize) {
-    if (m_glassCache[i].timestamp >= timestamp) {
-      foundIndex = i;
-      break;
+  double prevTimestamp = start_up_time_;
+  unsigned int nextIndex = 0;
+
+  for (TNodeVector::reverse_iterator riter = bestTroj.rbegin(); riter != bestTroj.rend(); ++riter)
+  {
+    int foundIndex = -1;
+
+    OrientedPoint v = (*riter)->pose - (*riter)->reading->getPose() - m_g_drift;
+    double timestamp = (*riter)->reading->getTime();
+    double timediff = timestamp - prevTimestamp;
+
+    v.x = v.x / timediff;v.y = v.y / timediff; v.theta = v.theta / timediff;// drift rate del pose / del time.
+
+    unsigned int i = nextIndex;
+    while (i < csize) {
+      if (m_glassCache[i].timestamp > timestamp) {
+        foundIndex = i;
+        break;
+      }
+      i++;
     }
-    i++;
-  }
-  if (i < csize) { // found the match
-    double timediff = timestamp - m_glassCache[foundIndex].timestamp;
-    OrientedPoint v = pose - m_glassCache[foundIndex].pose - m_g_drift; // drift rate del pose / del time.
-    v.x = v.x / timediff;v.y = v.y / timediff; v.theta = v.theta / timediff;
-    double ts = m_glassCache[0].timestamp;
-    for (int j = 0 + 1; j <= foundIndex; j++) {
-      OrientedPoint cp = m_glassCache[j].pose + v * (m_glassCache[j].timestamp - ts); // correct for pose stored in glass cache
-      // TODO: need to correct r and phi in the cache and draw them correctly in smmap.
-      Point phit = cp;
-      phit.x += m_glassCache[j].radius * cos(cp.theta + m_glassCache[j].phi);
-      phit.y += m_glassCache[j].radius * sin(cp.theta + m_glassCache[j].phi);
-      //TODO: Check neighbour points are also required to be marked?
-      IntPoint p1 = map.world2map( phit );
-      assert(p1.x>=0 && p1.y>=0);
-      map.cell(p1).updateGlass();
+    if (foundIndex > 0) // found the upper bound
+    {
+      for (int j = nextIndex; j < foundIndex; j++) {
+        OrientedPoint cp = m_glassCache[j].pose + v * (m_glassCache[j].timestamp - prevTimestamp); // correct for pose stored in glass cache
+        // TODO: need to correct r and phi in the cache and draw them correctly in smmap.
+        Point phit = cp;
+        phit.x += m_glassCache[j].radius * cos(cp.theta + m_glassCache[j].phi);
+        phit.y += m_glassCache[j].radius * sin(cp.theta + m_glassCache[j].phi);
+        //TODO: Check neighbour points are also required to be marked?
+        IntPoint p1 = map.world2map( phit );
+        assert(p1.x>=0 && p1.y>=0);
+        map.cell(p1).updateGlass();
+      }
+      nextIndex = foundIndex;
     }
-    //m_glassMatchIndex = foundIndex;
-    m_g_drift = pose - m_glassCache[foundIndex].pose;
+
+    m_g_drift = (*riter)->pose - (*riter)->reading->getPose();
+    prevTimestamp = timestamp;
   }
 }
 

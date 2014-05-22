@@ -381,8 +381,8 @@ SlamGMapping::initMapper(const sensor_msgs::LaserScan& scan)
   gsp_->setUpdateDistances(linearUpdate_, angularUpdate_, resampleThreshold_);
   gsp_->setUpdatePeriod(temporalUpdate_);
   gsp_->setgenerateMap(false);
-  gsp_->GridSlamProcessor::init(particles_, xmin_, ymin_, xmax_, ymax_,
-                                delta_, initialPose);
+  gsp_->setStartupTime(scan.header.stamp.toSec());
+  gsp_->init(particles_, xmin_, ymin_, xmax_, ymax_, delta_, initialPose);
   gsp_->setllsamplerange(llsamplerange_);
   gsp_->setllsamplestep(llsamplestep_);
   /// @todo Check these calls; in the gmapping gui, they use
@@ -414,7 +414,8 @@ SlamGMapping::addScan(const sensor_msgs::LaserScan& scan, GMapping::OrientedPoin
   // upside down, and invert the order of the readings.
   double* intensity_double = NULL;
   bool intensityOn = (scan.intensities.size() > 0);
-  if (intensityOn) {
+  if (intensityOn)
+  {
     assert( scan.ranges.size() == scan.intensities.size() );
   //  printf( " get intensity\n");   //check for the intensity
     intensity_double = new double[scan.intensities.size()];
@@ -424,28 +425,39 @@ SlamGMapping::addScan(const sensor_msgs::LaserScan& scan, GMapping::OrientedPoin
   {
     ROS_DEBUG("Inverting scan");
     int num_ranges = scan.ranges.size();
-    for(int i=0; i < num_ranges; i++)
+    for (int i=0; i < num_ranges; i++)
     {
       // Must filter out short readings, because the mapper won't
-      if(scan.ranges[i] < scan.range_min)
+      if (scan.ranges[i] < scan.range_min)
+      {
         ranges_double[i] = (double)scan.range_max;
+      }
       else
+      {
         ranges_double[i] = (double)scan.ranges[num_ranges-i-1];
-      if(intensityOn) {
-	intensity_double[i] = (double)scan.intensities[num_ranges-i-1];
+      }
+      if (intensityOn)
+      {
+	    intensity_double[i] = (double)scan.intensities[num_ranges-i-1];
       }
     }
-  } else 
+  }
+  else
   {
-    for(unsigned int i=0; i < scan.ranges.size(); i++)
+    for (unsigned int i=0; i < scan.ranges.size(); i++)
     {
       // Must filter out short readings, because the mapper won't
-      if(scan.ranges[i] < scan.range_min)
+      if (scan.ranges[i] < scan.range_min)
+      {
         ranges_double[i] = (double)scan.range_max;
+      }
       else
+      {
         ranges_double[i] = (double)scan.ranges[i];
-      if (intensityOn) {
-	intensity_double[i] = (double)scan.intensities[i];
+      }
+      if (intensityOn)
+      {
+        intensity_double[i] = (double)scan.intensities[i];
       }
     }
   }
@@ -604,6 +616,7 @@ SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan)
                                 delta_);
 
   ROS_DEBUG("Trajectory tree:");
+  GMapping::GridSlamProcessor::TNodeVector bestTroj;
   for(GMapping::GridSlamProcessor::TNode* n = best.node;
       n;
       n = n->parent)
@@ -617,19 +630,22 @@ SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan)
               n->pose.x,
               n->pose.y,
               n->pose.theta);
-
     if(!n->reading)
     {
       ROS_DEBUG("Reading is NULL");
       continue;
     }
 
+    bestTroj.push_back( n );
     matcher.invalidateActiveArea();
     matcher.computeActiveArea(smap, n->pose, &((*n->reading)[0]));
     matcher.registerScan(smap, n->pose, &((*n->reading)[0]));
-    //gsp_->glassMatch(smap, n->pose, n->reading->getTime());
   }
-  gsp_->glassMatch(smap, best.node->pose, best.node->reading->getTime());
+
+  if (bestTroj.size() > 0)
+  {
+    gsp_->glassMatch(smap, bestTroj);
+  }
 
   // the map may have expanded, so resize ros message as well
   if(map_.map.info.width != (unsigned int) smap.getMapSizeX() || map_.map.info.height != (unsigned int) smap.getMapSizeY()) {
@@ -667,12 +683,12 @@ SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan)
       }
       else if(occ > occ_thresh_)
       {
-        map_.map.data[MAP_IDX(map_.map.info.width, x, y)] = 100;
+        //map_.map.data[MAP_IDX(map_.map.info.width, x, y)] = 100;
       }
       else if (smap.cell(p).isGlassDetected()) // Add glass case
       {
         map_.map.data[MAP_IDX(map_.map.info.width, x, y)] = 100;
-        printf(".........glass detected 100 null map.....................\n");
+        //printf(".........glass detected 100 null map.....................\n");
       }
       else {
         map_.map.data[MAP_IDX(map_.map.info.width, x, y)] = 0;
