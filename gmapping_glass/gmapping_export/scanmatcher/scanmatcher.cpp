@@ -231,6 +231,8 @@ int ScanMatcher::registerScanG( GlassDetectionCache& glassmap, const OrientedPoi
   double detectionGrad = 4000.0; // tune this value
   int peakRange = 5; // tune this value
   double distAllowance = 0.2; // tune this value
+  double triggerIntensity = 8000;
+  double effectiveDetectionRange = 3.0;
 
   const double * angle = m_laserAngles + m_initialBeamsSkip;
   const double * intensity = intensities + m_initialBeamsSkip;
@@ -238,12 +240,12 @@ int ScanMatcher::registerScanG( GlassDetectionCache& glassmap, const OrientedPoi
   double * hasSigAt = NULL; // the pointer to the reading index that has the positive gradient for glass detection
   for (const double * r = readings + m_initialBeamsSkip; r < readings + m_laserBeams; r++, angle++, intensity++) {
     double distance = *r;
-    if (distance > m_laserMaxRange || distance > m_usableRange) {
+    if (distance > effectiveDetectionRange) {
       continue;
     }
     double int1 = *intensity;
     double gradint = int1 - int0;
-    if (int1 > 8000 && gradint >= detectionGrad) {
+    if (int1 > triggerIntensity && gradint >= detectionGrad) {
       hasSigAt = (double *)(r-1);
     }
     else if (gradint < -detectionGrad) {
@@ -252,12 +254,12 @@ int ScanMatcher::registerScanG( GlassDetectionCache& glassmap, const OrientedPoi
         // get mid/peak of the detected glass laser data curve
         double * peak = hasSigAt + (prang >> 1);
         double * peakAng = ((int)(peak - (readings + m_initialBeamsSkip))) + m_laserAngles + m_initialBeamsSkip;
-        /*for (int k = 0; k < 5; k++) {
-        	GlassInfo data = { pose, hasSigAt[k], , timestamp };
-            glassmap.push_back( data );
-        }*/
-    	GlassInfo data = { pose, *peak, *peakAng, timestamp };
-        glassmap.push_back( data );
+
+        //glassmap.push_back( { pose, *hasSigAt,
+          //*(((int)(hasSigAt - (readings + m_initialBeamsSkip))) + m_laserAngles + m_initialBeamsSkip), timestamp } );
+        glassmap.push_back( { pose, *peak, *peakAng, timestamp } );
+        //glassmap.push_back( { pose, *r,
+          //*(((int)(r - (readings + m_initialBeamsSkip))) + m_laserAngles + m_initialBeamsSkip), timestamp } );
         detectedPoints++;
         hasSigAt = NULL;
       }

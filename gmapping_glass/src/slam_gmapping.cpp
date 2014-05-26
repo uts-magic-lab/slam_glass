@@ -683,12 +683,12 @@ SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan)
       }
       else if(occ > occ_thresh_)
       {
-        //map_.map.data[MAP_IDX(map_.map.info.width, x, y)] = 100;
+        map_.map.data[MAP_IDX(map_.map.info.width, x, y)] = 100;
       }
       else if (smap.cell(p).isGlassDetected()) // Add glass case
       {
         map_.map.data[MAP_IDX(map_.map.info.width, x, y)] = 100;
-        //printf(".........glass detected 100 null map.....................\n");
+        //printf(".........glass detected.....................\n");
       }
       else {
         map_.map.data[MAP_IDX(map_.map.info.width, x, y)] = 0;

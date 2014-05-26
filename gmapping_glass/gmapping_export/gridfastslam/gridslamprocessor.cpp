@@ -409,7 +409,7 @@ bool GridSlamProcessor::processScan(const RangeReading & reading, int adaptParti
 
   // do glass detection
   if (m_g_linearDistance>=m_linearThresholdDistance / 10.0 ||
-      m_g_angularDistance>=m_angularThresholdDistance ||
+      m_g_angularDistance>=m_angularThresholdDistance / 5.0 ||
       (period_ >= 0.0 && (reading.getTime() - last_update_time_) > period_))
   {
     if (!plainReading) {
@@ -536,48 +536,47 @@ bool GridSlamProcessor::processScan(const RangeReading & reading, int adaptParti
 void GridSlamProcessor::glassMatch(ScanMatcherMap& map, TNodeVector & bestTroj)
 {
   // going backwards through the bestTroj vector
-  OrientedPoint m_g_drift;
-
   size_t csize = m_glassCache.size();
-  double prevTimestamp = start_up_time_;
   unsigned int nextIndex = 0;
 
-  for (TNodeVector::reverse_iterator riter = bestTroj.rbegin(); riter != bestTroj.rend(); ++riter)
-  {
-    int foundIndex = -1;
+  TNodeVector::reverse_iterator riter = bestTroj.rbegin();
+  double prevTimestamp = start_up_time_;
+  OrientedPoint  m_g_drift;
 
-    OrientedPoint v = (*riter)->pose - (*riter)->reading->getPose() - m_g_drift;
+  while (riter != bestTroj.rend())
+  {
+    OrientedPoint pose_diff = (*riter)->pose - (*riter)->reading->getPose();
+
+    if (pose_diff.theta > M_PI )
+      pose_diff.theta -= 2*M_PI;
+    else if (pose_diff.theta < -M_PI)
+      pose_diff.theta += 2*M_PI;
+
+    OrientedPoint v =  pose_diff - m_g_drift;
     double timestamp = (*riter)->reading->getTime();
     double timediff = timestamp - prevTimestamp;
 
-    v.x = v.x / timediff;v.y = v.y / timediff; v.theta = v.theta / timediff;// drift rate del pose / del time.
+    v.x = v.x / timediff;v.y = v.y / timediff;
+    v.theta = v.theta / timediff;// drift rate del pose / del time.
 
     unsigned int i = nextIndex;
-    while (i < csize) {
-      if (m_glassCache[i].timestamp > timestamp) {
-        foundIndex = i;
-        break;
-      }
+    while (i < csize && m_glassCache[i].timestamp <= timestamp) {
       i++;
     }
-    if (foundIndex > 0) // found the upper bound
-    {
-      for (int j = nextIndex; j < foundIndex; j++) {
-        OrientedPoint cp = m_glassCache[j].pose + v * (m_glassCache[j].timestamp - prevTimestamp); // correct for pose stored in glass cache
-        // TODO: need to correct r and phi in the cache and draw them correctly in smmap.
-        Point phit = cp;
-        phit.x += m_glassCache[j].radius * cos(cp.theta + m_glassCache[j].phi);
-        phit.y += m_glassCache[j].radius * sin(cp.theta + m_glassCache[j].phi);
-        //TODO: Check neighbour points are also required to be marked?
-        IntPoint p1 = map.world2map( phit );
-        assert(p1.x>=0 && p1.y>=0);
-        map.cell(p1).updateGlass();
-      }
-      nextIndex = foundIndex;
+    for (int j = nextIndex; j < i; j++) {
+      OrientedPoint cp = m_glassCache[j].pose + v * (m_glassCache[j].timestamp - prevTimestamp); // correct for pose stored in glass cache
+      Point phit = cp;
+      phit.x += m_glassCache[j].radius * cos(cp.theta + m_glassCache[j].phi);
+      phit.y += m_glassCache[j].radius * sin(cp.theta + m_glassCache[j].phi);
+      //TODO: Check neighbour points are also required to be marked?
+      IntPoint p1 = map.world2map( phit );
+      assert(p1.x>=0 && p1.y>=0);
+      map.cell(p1).updateGlass();
     }
-
-    m_g_drift = (*riter)->pose - (*riter)->reading->getPose();
+    nextIndex = i;
+    m_g_drift = pose_diff;
     prevTimestamp = timestamp;
+    ++riter;
   }
 }
 

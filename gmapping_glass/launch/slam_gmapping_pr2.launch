@@ -16,6 +16,7 @@
       <param name="srt" value="0.2"/>
       <param name="str" value="0.1"/>
       <param name="stt" value="0.2"/>
+      <param name="occ_thresh" value="0.5"/>
       <param name="linearUpdate" value="1.0"/>
       <param name="angularUpdate" value="0.5"/>
       <param name="temporalUpdate" value="3.0"/>
