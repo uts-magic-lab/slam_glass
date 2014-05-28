@@ -35,6 +35,10 @@ ScanMatcher::ScanMatcher(): m_laserPose(0,0,0){
 	m_freeCellRatio=sqrt(2.);
 	m_initialBeamsSkip=0;
 	
+  detectionGrad = 4000.0;
+  peakRange = 5;
+  triggerIntensity = 8000;
+
 /*	
 	// This  are the dafault settings for a grid map of 10 cm
 	m_llsamplerange=0.1;
@@ -227,12 +231,8 @@ int ScanMatcher::registerScanG( GlassDetectionCache& glassmap, const OrientedPoi
   pose.y += sin(p.theta) * m_laserPose.x + cos(p.theta) * m_laserPose.y;
   pose.theta += m_laserPose.theta;
 
-  //IntPoint p0 = map.world2map(lp);
-  double detectionGrad = 4000.0; // tune this value
-  int peakRange = 5; // tune this value
-  double distAllowance = 0.2; // tune this value
-  double triggerIntensity = 8000;
-  double effectiveDetectionRange = 3.0;
+  double distAllowance = 0.1; // tune this value
+  double effectiveDetectionRange = 10.0;
 
   const double * angle = m_laserAngles + m_initialBeamsSkip;
   const double * intensity = intensities + m_initialBeamsSkip;
@@ -662,7 +662,8 @@ double ScanMatcher::likelihood
 }
 
 void ScanMatcher::setMatchingParameters
-	(double urange, double range, double sigma, int kernsize, double lopt, double aopt, int iterations,  double likelihoodSigma, unsigned int likelihoodSkip){	
+	(double urange, double range, double sigma, int kernsize, double lopt, double aopt, int iterations,  double likelihoodSigma, unsigned int likelihoodSkip)
+{
 	m_usableRange=urange;
 	m_laserMaxRange=range;
 	m_kernelSize=kernsize;
@@ -674,5 +675,11 @@ void ScanMatcher::setMatchingParameters
 	m_likelihoodSkip=likelihoodSkip;
 }
 
-};
+void ScanMatcher::setGlassDetectionParameters(double trigInt, double intDelta, double profWidth)
+{
+  detectionGrad = intDelta;
+  triggerIntensity = trigInt;
+  peakRange = profWidth;
+}
 
+}; //namespace GMapping

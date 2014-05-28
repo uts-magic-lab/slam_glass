@@ -28,6 +28,7 @@ class ScanMatcher{
 			(unsigned int beams, double* angles, const OrientedPoint& lpose);
 		void setMatchingParameters
 			(double urange, double range, double sigma, int kernsize, double lopt, double aopt, int iterations, double likelihoodSigma=1, unsigned int likelihoodSkip=0 );
+    void setGlassDetectionParameters(double trigInt, double intDelta, double profWidth);
 		void invalidateActiveArea();
 		void computeActiveArea(ScanMatcherMap& map, const OrientedPoint& p, const double* readings);
 
@@ -74,6 +75,10 @@ class ScanMatcher{
 
 		// allocate this large array only once
 		IntPoint* m_linePoints;
+	private:
+	  double detectionGrad;
+    double triggerIntensity;
+	  int peakRange;
 };
 
 inline double ScanMatcher::icpStep(OrientedPoint & pret, const ScanMatcherMap& map, const OrientedPoint& p, const double* readings) const{

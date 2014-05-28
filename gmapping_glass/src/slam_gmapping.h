@@ -117,4 +117,9 @@ class SlamGMapping
     double llsamplestep_;
     double lasamplerange_;
     double lasamplestep_;
+
+    // Parameters used by glass detection
+    double glassTrigIntensity_;
+    double glassIntensityDelta_;
+    int glassProfileWidth_;
 };

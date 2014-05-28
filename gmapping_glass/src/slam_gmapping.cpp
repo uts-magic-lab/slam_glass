@@ -217,6 +217,12 @@ SlamGMapping::SlamGMapping():
     lasamplerange_ = 0.005;
   if(!private_nh_.getParam("lasamplestep", lasamplestep_))
     lasamplestep_ = 0.005;
+  if(!private_nh_.getParam("glassTrigIntensity", glassTrigIntensity_))
+    glassTrigIntensity_ = 8000.0;
+  if(!private_nh_.getParam("glassIntensityDelta", glassIntensityDelta_))
+    glassIntensityDelta_ = 4000.0;
+  if(!private_nh_.getParam("glassProfileWidth", glassProfileWidth_))
+    glassProfileWidth_ = 5;
 
   entropy_publisher_ = private_nh_.advertise<std_msgs::Float64>("entropy", 1, true);
   sst_ = node_.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
@@ -376,7 +382,7 @@ SlamGMapping::initMapper(const sensor_msgs::LaserScan& scan)
   gsp_->setMatchingParameters(maxUrange_, maxRange_, sigma_,
                               kernelSize_, lstep_, astep_, iterations_,
                               lsigma_, ogain_, lskip_);
-
+  gsp_->setGlassDetectionParameters(glassTrigIntensity_, glassIntensityDelta_, glassProfileWidth_);
   gsp_->setMotionModelParameters(srr_, srt_, str_, stt_);
   gsp_->setUpdateDistances(linearUpdate_, angularUpdate_, resampleThreshold_);
   gsp_->setUpdatePeriod(temporalUpdate_);
@@ -625,11 +631,12 @@ SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan)
               n->pose.x,
               n->pose.y,
               n->pose.theta);
-
+    /*
     ROS_INFO ("  %.3f %.3f %.3f",
               n->pose.x,
               n->pose.y,
               n->pose.theta);
+    */
     if(!n->reading)
     {
       ROS_DEBUG("Reading is NULL");

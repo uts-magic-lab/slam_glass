@@ -218,7 +218,12 @@ void GridSlamProcessor::setMatchingParameters(double urange, double range, doubl
 		   << " -astep "    << aopt << endl;
 	}
 }
-  
+
+void GridSlamProcessor::setGlassDetectionParameters(double trigInt, double intDelta, double profWidth)
+{
+  m_matcher.setGlassDetectionParameters(trigInt, intDelta, profWidth);
+}
+
 void GridSlamProcessor::setMotionModelParameters(double srr, double srt, double str, double stt)
 {
   m_motionModel.srr=srr;
@@ -539,6 +544,9 @@ void GridSlamProcessor::glassMatch(ScanMatcherMap& map, TNodeVector & bestTroj)
   size_t csize = m_glassCache.size();
   unsigned int nextIndex = 0;
 
+  if (csize==0)
+    return;
+
   TNodeVector::reverse_iterator riter = bestTroj.rbegin();
   double prevTimestamp = start_up_time_;
   OrientedPoint  m_g_drift;
@@ -564,7 +572,7 @@ void GridSlamProcessor::glassMatch(ScanMatcherMap& map, TNodeVector & bestTroj)
       i++;
     }
     for (int j = nextIndex; j < i; j++) {
-      OrientedPoint cp = m_glassCache[j].pose + v * (m_glassCache[j].timestamp - prevTimestamp); // correct for pose stored in glass cache
+      OrientedPoint cp = m_glassCache[j].pose + v * (m_glassCache[j].timestamp - prevTimestamp) + m_g_drift; // correct for pose stored in glass cache
       Point phit = cp;
       phit.x += m_glassCache[j].radius * cos(cp.theta + m_glassCache[j].phi);
       phit.y += m_glassCache[j].radius * sin(cp.theta + m_glassCache[j].phi);
