@@ -675,7 +675,7 @@ void ScanMatcher::setMatchingParameters
 	m_likelihoodSkip=likelihoodSkip;
 }
 
-void ScanMatcher::setGlassDetectionParameters(double trigInt, double intDelta, double profWidth)
+void ScanMatcher::setGlassDetectionParameters(double trigInt, double intDelta, int profWidth)
 {
   detectionGrad = intDelta;
   triggerIntensity = trigInt;

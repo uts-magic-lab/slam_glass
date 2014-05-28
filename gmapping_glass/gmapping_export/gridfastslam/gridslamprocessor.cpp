@@ -219,7 +219,7 @@ void GridSlamProcessor::setMatchingParameters(double urange, double range, doubl
 	}
 }
 
-void GridSlamProcessor::setGlassDetectionParameters(double trigInt, double intDelta, double profWidth)
+void GridSlamProcessor::setGlassDetectionParameters(double trigInt, double intDelta, int profWidth)
 {
   m_matcher.setGlassDetectionParameters(trigInt, intDelta, profWidth);
 }

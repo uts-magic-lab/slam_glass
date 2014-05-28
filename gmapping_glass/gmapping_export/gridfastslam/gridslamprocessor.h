@@ -147,7 +147,7 @@ class GridSlamProcessor
 	      OrientedPoint initialPose=OrientedPoint(0,0,0));
     void setMatchingParameters(double urange, double range, double sigma, int kernsize, double lopt, double aopt, 
 			       int iterations, double likelihoodSigma=1, double likelihoodGain=1, unsigned int likelihoodSkip=0);
-    void setGlassDetectionParameters(double trigInt, double intDelta, double profWidth);
+    void setGlassDetectionParameters(double trigInt, double intDelta, int profWidth);
     void setMotionModelParameters(double srr, double srt, double str, double stt);
     void setUpdateDistances(double linear, double angular, double resampleThreshold);
     void setUpdatePeriod(double p) {period_=p;}

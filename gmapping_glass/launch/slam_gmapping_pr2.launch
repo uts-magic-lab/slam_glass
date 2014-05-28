@@ -16,7 +16,6 @@
       <param name="srt" value="0.2"/>
       <param name="str" value="0.1"/>
       <param name="stt" value="0.2"/>
-      <param name="occ_thresh" value="0.5"/>
       <param name="linearUpdate" value="1.0"/>
       <param name="angularUpdate" value="0.5"/>
       <param name="temporalUpdate" value="3.0"/>
@@ -31,7 +30,7 @@
       <param name="llsamplestep" value="0.01"/>
       <param name="lasamplerange" value="0.005"/>
       <param name="lasamplestep" value="0.005"/>
-      <param name="glassTrigIntensity" value="7500.0"/>
+      <param name="glassTrigIntensity" value="8000.0"/>
       <param name="glassIntensityDelta" value="4000.0"/>
     </node>
 </launch>
