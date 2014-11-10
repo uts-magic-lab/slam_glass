@@ -14,8 +14,8 @@ struct PointAccumulator
 {
   typedef point<float> FloatPoint;
   FloatPoint acc;
-  bool glassDetected;
   int n, visits;
+  bool glassDetected;
   static PointAccumulator* unknown_ptr;
 
   /* before
