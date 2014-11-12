@@ -86,7 +86,7 @@ void ScanMatcher::computeActiveArea(ScanMatcherMap& map, const OrientedPoint& p,
 	/*determine the size of the area*/
 	const double * angle=m_laserAngles+m_initialBeamsSkip;
 	for (const double* r=readings+m_initialBeamsSkip; r<readings+m_laserBeams; r++, angle++){
-		if (*r>m_laserMaxRange||*r==0.0) continue;
+		if (isnan(*r)||*r>m_laserMaxRange||*r==0.0) continue;
 		double d=*r>m_usableRange?m_usableRange:*r;
 		Point phit=lp;
 		phit.x+=d*cos(lp.theta+*angle);
@@ -118,7 +118,7 @@ void ScanMatcher::computeActiveArea(ScanMatcherMap& map, const OrientedPoint& p,
 	for (const double* r=readings+m_initialBeamsSkip; r<readings+m_laserBeams; r++, angle++)
 		if (m_generateMap){
 			double d=*r;
-			if (d>m_laserMaxRange||d==0.0)
+			if (isnan(d)||d>m_laserMaxRange||d==0.0)
 				continue;
 			if (d>m_usableRange)
 				d=m_usableRange;
@@ -140,7 +140,7 @@ void ScanMatcher::computeActiveArea(ScanMatcherMap& map, const OrientedPoint& p,
 				activeArea.insert(cp);
 			}
 		} else {
-			if (*r>m_laserMaxRange||*r>m_usableRange||*r==0.0) continue;
+			if (isnan(*r)||*r>m_laserMaxRange||*r>m_usableRange||*r==0.0) continue;
 			Point phit=lp;
 			phit.x+=*r*cos(lp.theta+*angle);
 			phit.y+=*r*sin(lp.theta+*angle);
@@ -180,10 +180,11 @@ double ScanMatcher::registerScan(ScanMatcherMap& map, const OrientedPoint& p, co
 
   const double * angle = m_laserAngles+m_initialBeamsSkip;
   double esum = 0;
+  int debugstep = 0;
   for (const double* r=readings+m_initialBeamsSkip; r<readings+m_laserBeams; r++, angle++) {
+    double d = *r;
     if (m_generateMap) {
-      double d=*r;
-      if (d>m_laserMaxRange)
+      if (isnan(d)||d>m_laserMaxRange)
         continue;
       if (d>m_usableRange)
         d=m_usableRange;
@@ -208,14 +209,21 @@ double ScanMatcher::registerScan(ScanMatcherMap& map, const OrientedPoint& p, co
       }
     }
     else {
-      if (*r>m_laserMaxRange||*r>m_usableRange) continue;
+      if (isnan(d) || d>m_laserMaxRange||d>m_usableRange) continue;
       Point phit=lp;
-      phit.x+=*r*cos(lp.theta+*angle);
-      phit.y+=*r*sin(lp.theta+*angle);
+      phit.x+=d*cos(lp.theta+*angle);
+      phit.y+=d*sin(lp.theta+*angle);
       IntPoint p1=map.world2map(phit);
-      assert(p1.x>=0 && p1.y>=0);
-      map.cell(p1).update(true,phit);
+      //assert(p1.x>=0 && p1.y>=0);
+      if (p1.x>=0 && p1.y>=0) {
+        map.cell(p1).update(true,phit);
+      }
+      else {
+        printf( "registerscan step %d hit invalid point (%d,%d) phit (%f,%f) r= %f angle %f, lptheta = %f\n",
+            debugstep, p1.x, p1.y, phit.x, phit.y, d, *angle, lp.theta );
+      }
     }
+    debugstep++;
   }
   //cout  << "informationGain=" << -esum << endl;
   return esum;
@@ -240,7 +248,7 @@ int ScanMatcher::registerScanG( GlassDetectionCache& glassmap, const OrientedPoi
   double * hasSigAt = NULL; // the pointer to the reading index that has the positive gradient for glass detection
   for (const double * r = readings + m_initialBeamsSkip; r < readings + m_laserBeams; r++, angle++, intensity++) {
     double distance = *r;
-    if (distance > effectiveDetectionRange) {
+    if (isnan( distance ) || distance > effectiveDetectionRange) {
       continue;
     }
     double int1 = *intensity;

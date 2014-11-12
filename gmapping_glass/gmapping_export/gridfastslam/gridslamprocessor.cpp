@@ -571,15 +571,20 @@ void GridSlamProcessor::glassMatch(ScanMatcherMap& map, TNodeVector & bestTroj)
     while (i < csize && m_glassCache[i].timestamp <= timestamp) {
       i++;
     }
-    for (int j = nextIndex; j < i; j++) {
+    for (unsigned int j = nextIndex; j < i; j++) {
       OrientedPoint cp = m_glassCache[j].pose + v * (m_glassCache[j].timestamp - prevTimestamp) + m_g_drift; // correct for pose stored in glass cache
       Point phit = cp;
       phit.x += m_glassCache[j].radius * cos(cp.theta + m_glassCache[j].phi);
       phit.y += m_glassCache[j].radius * sin(cp.theta + m_glassCache[j].phi);
       //TODO: Check neighbour points are also required to be marked?
       IntPoint p1 = map.world2map( phit );
-      assert(p1.x>=0 && p1.y>=0);
-      map.cell(p1).updateGlass();
+      //assert(p1.x>=0 && p1.y>=0);
+      if (p1.x>=0 && p1.y>=0)
+        map.cell(p1).updateGlass();
+      else {
+        printf( "glassmatch hit invalid point (%d,%d) phit (%f,%f) r= %f angle %f, cptheta = %f\n",
+            p1.x, p1.y, phit.x, phit.y, m_glassCache[j].radius, m_glassCache[j].phi, cp.theta );
+      }
     }
     nextIndex = i;
     m_g_drift = pose_diff;
