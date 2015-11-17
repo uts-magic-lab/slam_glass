@@ -7,7 +7,6 @@ project(slam_glass)
 find_package(catkin REQUIRED COMPONENTS
   nav_msgs
   roscpp
-  rosbag
   message_filters
   tf
   std_msgs
