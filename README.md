@@ -3,13 +3,13 @@ This code is a modified version of glam code (v39).
 We add a glass detection algorithm and integrated it with the existing SLAM algorithm to produce maps with detected glass panels marked as solid wall objects. We developed and tested our algorithm and code on an unmodified PR2 robot platform.
 
 ## Compile source code
-run ```./configure``` under ```gmapping_glass/gmapping_export``` directory
-then do ```make```.
-After the libraries is compiled, go back its parent directory and compile the application with ```rosmake```.
+Clone the repository in a working catkin workspace.
+run ```./configure``` under ```gmapping_glass/gmapping_export``` directory, then do ```cd ..;make -f Makefile.gmapping```.
+After the libraries is compiled, go back to catkin root directory and compile the application with ```catkin_make```.
 
 ## Launch slam_glass service
 ```
-roslaunch slam_glass slam_gmapping_pr2.launch
+roslaunch slam_glass slam_glass_pr2.launch
 ```
 
 ## Test dataset
