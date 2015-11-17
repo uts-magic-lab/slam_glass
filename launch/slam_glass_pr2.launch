@@ -1,6 +1,6 @@
 <launch>
     <param name="use_sim_time" value="true"/>
-    <node pkg="gmapping_glass" type="slam_gmapping_glass" name="slam_gmapping_glass" output="screen"  args="_odom_frame:=odom_combined">
+    <node pkg="slam_glass" type="slam_glass" name="slam_glass" output="screen"  args="_odom_frame:=odom_combined">
       <remap from="scan" to="base_scan"/>
       <param name="map_udpate_interval" value="5.0"/>
       <param name="maxUrange" value="16.0"/>
