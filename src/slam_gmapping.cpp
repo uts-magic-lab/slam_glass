@@ -235,14 +235,14 @@ SlamGMapping::SlamGMapping():
   transform_thread_ = new boost::thread(boost::bind(&SlamGMapping::publishLoop, this, transform_publish_period));
 }
 
-void SlamGMapping::publishLoop(double transform_publish_period){
+void SlamGMapping::publishLoop(double transform_publish_period)
+{
   if(transform_publish_period == 0)
     return;
 
-  ros::Rate r(1.0 / transform_publish_period);
   while(ros::ok()){
     publishTransform();
-    r.sleep();
+    usleep( transform_publish_period * 1E6 );
   }
 }
 
@@ -694,7 +694,7 @@ SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan)
       }
       else if (smap.cell(p).isGlassDetected()) // Add glass case
       {
-        map_.map.data[MAP_IDX(map_.map.info.width, x, y)] = 100;
+        map_.map.data[MAP_IDX(map_.map.info.width, x, y)] = 60;
         //printf(".........glass detected.....................\n");
       }
       else {

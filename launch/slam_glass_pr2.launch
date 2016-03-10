@@ -1,7 +1,10 @@
 <launch>
-    <param name="use_sim_time" value="true"/>
-    <node pkg="slam_glass" type="slam_glass" name="slam_glass" output="screen"  args="_odom_frame:=odom_combined">
+  <param name="use_sim_time" value="true"/>
+
+<!--    <node pkg="tf" type="static_transform_publisher" name="map_to_odom" args="0.0 0.0 0.0 0 0 0.0 /map /odom 1000"/> -->
+    <node pkg="slam_glass" type="slam_glass" name="slam_glass" output="screen"> 
       <remap from="scan" to="base_scan"/>
+      <param name="odom_frame" value="odom_combined"/>
       <param name="map_udpate_interval" value="5.0"/>
       <param name="maxUrange" value="16.0"/>
       <param name="sigma" value="0.05"/>
