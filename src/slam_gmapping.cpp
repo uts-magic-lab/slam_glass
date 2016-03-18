@@ -224,6 +224,27 @@ SlamGMapping::SlamGMapping():
   if(!private_nh_.getParam("glassProfileWidth", glassProfileWidth_))
     glassProfileWidth_ = 5;
 
+#ifdef VISUALISE
+  trajMarker_.header.frame_id = map_frame_; //"/base_footprint";
+
+  trajMarker_.ns = "traj";
+  trajMarker_.id = 0;
+
+  // Set the marker type.  Initially this is CUBE, and cycles between that and SPHERE, ARROW, and CYLINDER
+  trajMarker_.type = visualization_msgs::Marker::LINE_STRIP;
+  // Set the marker action.  Options are ADD, DELETE, and new in ROS Indigo: 3 (DELETEALL)
+  trajMarker_.action = visualization_msgs::Marker::ADD;
+
+  // Set the scale of the marker -- 1x1x1 here means 1m on a side
+  trajMarker_.scale.x = trajMarker_.scale.y = trajMarker_.scale.z = 0.1;
+
+  // Set the color -- be sure to set alpha to something non-zero!
+  trajMarker_.color.r = 0.93f;
+  trajMarker_.color.g = 0.51f;
+  trajMarker_.color.b = 0.21f;
+  trajMarker_.color.a = 1.0;
+#endif
+
   entropy_publisher_ = private_nh_.advertise<std_msgs::Float64>("entropy", 1, true);
   sst_ = node_.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
   sstm_ = node_.advertise<nav_msgs::MapMetaData>("map_metadata", 1, true);
@@ -231,6 +252,9 @@ SlamGMapping::SlamGMapping():
   scan_filter_sub_ = new message_filters::Subscriber<sensor_msgs::LaserScan>(node_, "scan", 5);
   scan_filter_ = new tf::MessageFilter<sensor_msgs::LaserScan>(*scan_filter_sub_, tf_, odom_frame_, 5);
   scan_filter_->registerCallback(boost::bind(&SlamGMapping::laserCallback, this, _1));
+#ifdef VISUALISE
+  trajVisualPub_ = node_.advertise<visualization_msgs::Marker>( "/slam_glass/robot_trajectory", 1 );
+#endif
 
   transform_thread_ = new boost::thread(boost::bind(&SlamGMapping::publishLoop, this, transform_publish_period));
 }
@@ -649,9 +673,24 @@ SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan)
     matcher.registerScan(smap, n->pose, &((*n->reading)[0]));
   }
 
-  if (bestTroj.size() > 0)
+  int bestTrajSize = bestTroj.size();
+  if (bestTrajSize > 0)
   {
     gsp_->glassMatch(smap, bestTroj);
+#ifdef VISUALISE
+    trajMarker_.points.clear();
+    trajMarker_.points.resize(bestTrajSize);
+
+    GMapping::GridSlamProcessor::TNodeVector::reverse_iterator riter = bestTroj.rbegin();
+    int ri = 0;
+    while (riter != bestTroj.rend()) {
+      trajMarker_.points[ri].x = (*riter)->pose.x;
+      trajMarker_.points[ri].y = (*riter)->pose.y;
+      trajMarker_.points[ri].z = 0;
+      ri++;
+      ++riter;
+    }
+#endif
   }
 
   // the map may have expanded, so resize ros message as well
@@ -694,7 +733,11 @@ SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan)
       }
       else if (smap.cell(p).isGlassDetected()) // Add glass case
       {
-        map_.map.data[MAP_IDX(map_.map.info.width, x, y)] = 60;
+#ifdef VISUALISE
+        map_.map.data[MAP_IDX(map_.map.info.width, x, y)] = 110;
+#else
+        map_.map.data[MAP_IDX(map_.map.info.width, x, y)] = 100;
+#endif
         //printf(".........glass detected.....................\n");
       }
       else {
@@ -705,11 +748,18 @@ SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan)
   got_map_ = true;
 
   //make sure to set the header information on the map
-  map_.map.header.stamp = ros::Time::now();
+  map_.map.header.stamp =
+#ifdef VISUALISE
+  trajMarker_.header.stamp =
+#endif
+  ros::Time::now();
   map_.map.header.frame_id = map_frame_;
 
   sst_.publish(map_.map);
   sstm_.publish(map_.map.info);
+#ifdef VISUALISE
+  trajVisualPub_.publish( trajMarker_ );
+#endif
 }
 
 bool 

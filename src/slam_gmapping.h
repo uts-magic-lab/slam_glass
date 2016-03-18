@@ -24,6 +24,7 @@
 #include "tf/transform_broadcaster.h"
 #include "message_filters/subscriber.h"
 #include "tf/message_filter.h"
+#include <visualization_msgs/MarkerArray.h>
 
 #include "gmapping/gridfastslam/gridslamprocessor.h"
 #include "gmapping/sensor/sensor_base/sensor.h"
@@ -53,7 +54,10 @@ class SlamGMapping
     message_filters::Subscriber<sensor_msgs::LaserScan>* scan_filter_sub_;
     tf::MessageFilter<sensor_msgs::LaserScan>* scan_filter_;
     tf::TransformBroadcaster* tfB_;
-
+#ifdef VISUALISE
+    ros::Publisher trajVisualPub_;
+    visualization_msgs::Marker trajMarker_;
+#endif
     GMapping::GridSlamProcessor* gsp_;
     GMapping::RangeSensor* gsp_laser_;
     double gsp_laser_angle_increment_;

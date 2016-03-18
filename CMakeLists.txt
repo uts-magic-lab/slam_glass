@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_filters
   tf
   std_msgs
+  visualization_msgs
   #message_generation
 )
 
@@ -76,7 +77,7 @@ catkin_package(
 ###########
 ## Build ##
 ###########
-#add_definitions(-DROS_BUILD)
+#add_definitions(-DVISUALISE)
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
