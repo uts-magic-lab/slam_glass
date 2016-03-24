@@ -24,3 +24,10 @@ If the same dataset is run against the default SLAM ROS package, the generated m
 <img src="https://cloud.githubusercontent.com/assets/6646691/10475464/a62dc208-728f-11e5-902d-4d0dd8d1c263.png" width="200">
 
 **Figure 2. Default SLAM without glass detection.**
+
+## Visualisation
+Detected glasses can be visualised using ```rviz``` program. You will need to turn on the visualisation feature by uncommenting line 80 in ```CMakeFiles.txt``` and recompile slam_glass source code. The detected glass is marked in green colour in the grid map (see Figure 3). You can also visualse the robot trajectory by adding a visual marker and subscribe to ```/slam_glass/robot_trajectory```.
+
+<img src="https://cloud.githubusercontent.com/assets/6646691/14004879/b2d76b52-f1b1-11e5-9ea7-a1b7ed77d694.png" width="200">
+
+**Figure 3. Visualise detected glass and robot trajectory.**
