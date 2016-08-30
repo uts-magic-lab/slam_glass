@@ -1,11 +1,13 @@
 <launch>
   <param name="use_sim_time" value="true"/>
 
-<!--    <node pkg="tf" type="static_transform_publisher" name="map_to_odom" args="0.0 0.0 0.0 0 0 0.0 /map /odom 1000"/> -->
-    <node pkg="slam_glass" type="slam_glass" name="slam_glass" output="screen"> 
+  <!--
+    <node pkg="tf" type="static_transform_publisher" name="map_to_odom" args="0.0 0.0 0.0 0 0 0.0 /map /odom 1000"/>
+  -->
+    <node pkg="slam_glass" type="slam_glass" name="slam_gmapping" output="screen"> 
       <param name="odom_frame" value="odom"/>
       <param name="base_frame" value="base_footprint"/>
-      <param name="map_udpate_interval" value="2.0"/>
+      <param name="map_udpate_interval" value="1.0"/>
       <param name="maxRange" value="9.0"/>
       <param name="sigma" value="0.05"/>
       <param name="kernelSize" value="1"/>
