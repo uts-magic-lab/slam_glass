@@ -31,3 +31,18 @@ Detected glasses can be visualised using ```rviz``` program. You will need to tu
 <img src="https://cloud.githubusercontent.com/assets/6646691/14004879/b2d76b52-f1b1-11e5-9ea7-a1b7ed77d694.png" width="200">
 
 **Figure 3. Visualise detected glass and robot trajectory.**
+
+## Citing this work
+If you use this code in your project, please cite the following reference.
+```
+@article{Wang201797,
+title = "Detecting glass in Simultaneous Localisation and Mapping",
+journal = "Robotics and Autonomous Systems",
+volume = "88",
+pages = "97 - 103",
+year = "2017",
+issn = "0921-8890",
+doi = "http://dx.doi.org/10.1016/j.robot.2016.11.003",
+author = "Xun Wang and JianGuo Wang"
+}
+```
