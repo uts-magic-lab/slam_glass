@@ -13,7 +13,7 @@ roslaunch slam_glass slam_glass_pr2.launch
 ```
 
 ## Test dataset
-You can download our test dataset [here](http://experimentdata.themagiclab.org/static/slam_glass_test_dataset.tar.gz) and run it against slam_glass service node. Simply extract the bag files from the compressed file and use ```rosplay``` to playback the data files. You should hopefully produce a map similar to the following figure.
+You can download our test dataset [here](https://drive.google.com/open?id=1hb-OgI7ufrEHHgHtiSz6EZ7LgohXNc4o) and run it against slam_glass service node. Simply extract the bag files from the compressed file and use ```rosplay``` to playback the data files. You should hopefully produce a map similar to the following figure.
 
 <img src="https://cloud.githubusercontent.com/assets/6646691/10475396/f3016798-728e-11e5-9904-7eca19055e98.png" width="200">
 
