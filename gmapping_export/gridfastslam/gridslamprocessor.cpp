@@ -578,8 +578,7 @@ void GridSlamProcessor::glassMatch(ScanMatcherMap& map, TNodeVector & bestTroj)
       phit.y += m_glassCache[j].radius * sin(cp.theta + m_glassCache[j].phi);
       //TODO: Check neighbour points are also required to be marked?
       IntPoint p1 = map.world2map( phit );
-      //assert(p1.x>=0 && p1.y>=0);
-      if (p1.x>=0 && p1.y>=0)
+      if (p1.x>=0 && p1.y>=0 && map.isInside( p1 ))
         map.cell(p1).updateGlass();
       else {
         printf( "glassmatch hit invalid point (%d,%d) phit (%f,%f) r= %f angle %f, cptheta = %f\n",
